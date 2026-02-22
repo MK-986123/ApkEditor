@@ -101,6 +101,9 @@ public class RootCommand implements CommandInterface {
         }
         for (int i = 0; i < command.length(); i++) {
             char c = command.charAt(i);
+            if (c == '\n' || c == '\r' || c == 0) {
+                throw new IllegalArgumentException("Command contains control characters");
+            }
             if (DANGEROUS_SHELL_CHARS.indexOf(c) >= 0) {
                 throw new IllegalArgumentException(
                         "Command contains potentially dangerous character: '" + c + "'");
