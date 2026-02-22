@@ -9,9 +9,14 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.InvalidClassException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
+import java.io.ObjectStreamClass;
 import java.io.OutputStream;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.zip.ZipFile;
 
 public class IOUtils {
@@ -103,6 +108,29 @@ public class IOUtils {
         return false;
     }
 
+    // Allowed classes for deserialization to prevent insecure deserialization attacks
+    private static final Set<String> ALLOWED_DESERIALIZATION_PREFIXES = new HashSet<>(Arrays.asList(
+            "java.lang.",
+            "java.util.",
+            "[B", // byte array
+            "[C", // char array
+            "[I", // int array
+            "[J", // long array
+            "[S", // short array
+            "[Z", // boolean array
+            "[Ljava.lang.",
+            "com.gmail.heagoo."
+    ));
+
+    private static boolean isDeserializationAllowed(String className) {
+        for (String prefix : ALLOWED_DESERIALIZATION_PREFIXES) {
+            if (className.startsWith(prefix)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     public static Object readObjectFromFile(String filePath) {
         if (filePath == null) {
             return null;
@@ -112,7 +140,18 @@ public class IOUtils {
         File file = new File(filePath);
         ObjectInputStream objIn = null;
         try {
-            objIn = new ObjectInputStream(new FileInputStream(file));
+            objIn = new ObjectInputStream(new FileInputStream(file)) {
+                @Override
+                protected Class<?> resolveClass(ObjectStreamClass desc)
+                        throws IOException, ClassNotFoundException {
+                    String className = desc.getName();
+                    if (!isDeserializationAllowed(className)) {
+                        throw new InvalidClassException(
+                                "Deserialization not allowed for class: " + className);
+                    }
+                    return super.resolveClass(desc);
+                }
+            };
             result = objIn.readObject();
         } catch (Exception e) {
             e.printStackTrace();

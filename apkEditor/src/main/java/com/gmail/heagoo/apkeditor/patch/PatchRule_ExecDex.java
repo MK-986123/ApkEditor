@@ -201,6 +201,24 @@ class PatchRule_ExecDex extends PatchRule {
             return false;
         }
 
+        // Validate mainClass format (must be a valid Java class name)
+        if (!this.mainClass.matches("[a-zA-Z_$][a-zA-Z0-9_$]*(\\.[a-zA-Z_$][a-zA-Z0-9_$]*)*")) {
+            logger.error(R.string.general_error, "Invalid main class name: " + this.mainClass);
+            return false;
+        }
+
+        // Validate entranceFunc format (must be a valid Java method name)
+        if (!this.entranceFunc.matches("[a-zA-Z_$][a-zA-Z0-9_$]*")) {
+            logger.error(R.string.general_error, "Invalid entrance function name: " + this.entranceFunc);
+            return false;
+        }
+
+        // Validate scriptName does not contain path traversal
+        if (this.scriptName.contains("..") || this.scriptName.startsWith("/")) {
+            logger.error(R.string.general_error, "Invalid script name: " + this.scriptName);
+            return false;
+        }
+
         return true;
     }
 

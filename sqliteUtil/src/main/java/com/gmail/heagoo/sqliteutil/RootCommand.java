@@ -89,6 +89,25 @@ public class RootCommand implements CommandInterface {
         return process;
     }
 
+    private static final String DANGEROUS_SHELL_CHARS = "`$|;&<>(){}";
+
+    /**
+     * Validates a command string for dangerous shell metacharacters
+     * that could enable command injection.
+     */
+    private static void validateCommand(String command) {
+        if (command == null) {
+            throw new IllegalArgumentException("Command must not be null");
+        }
+        for (int i = 0; i < command.length(); i++) {
+            char c = command.charAt(i);
+            if (DANGEROUS_SHELL_CHARS.indexOf(c) >= 0) {
+                throw new IllegalArgumentException(
+                        "Command contains potentially dangerous character: '" + c + "'");
+            }
+        }
+    }
+
     public boolean runRootCommand(String command, String[] env,
                                   Integer timeout) {
         return runRootCommand(command, env, timeout, false);

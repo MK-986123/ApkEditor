@@ -145,13 +145,45 @@ public class HttpServer extends NanoHTTPD {
         return notFound();
     }
 
+    /**
+     * Validates that the given path does not escape the base directory
+     * via path traversal sequences like "../".
+     *
+     * @return the validated canonical File, or null if the path is invalid
+     */
+    private File resolveAndValidatePath(String baseDir, String relativePath) {
+        if (relativePath == null || relativePath.contains("..")) {
+            return null;
+        }
+        try {
+            File base = new File(baseDir).getCanonicalFile();
+            File resolved = new File(baseDir + "/" + relativePath).getCanonicalFile();
+            if (!resolved.getPath().startsWith(base.getPath() + File.separator) &&
+                    !resolved.getPath().equals(base.getPath())) {
+                return null;
+            }
+            return resolved;
+        } catch (IOException e) {
+            return null;
+        }
+    }
+
+    private static String escapeHtml(String input) {
+        if (input == null) return "";
+        return input.replace("&", "&amp;")
+                .replace("<", "&lt;")
+                .replace(">", "&gt;")
+                .replace("\"", "&quot;")
+                .replace("'", "&#x27;");
+    }
+
     private Response saveTextFile(Map<String, String> params) {
         String relativePath = params.get("path");
         String content = params.get("content");
 
         if (relativePath != null && content != null) {
-            File file = new File(projectDirectory + "/" + relativePath);
-            if (file.isFile() && file.exists()) {
+            File file = resolveAndValidatePath(projectDirectory, relativePath);
+            if (file != null && file.isFile() && file.exists()) {
                 FileOutputStream fos = null;
                 try {
                     fos = new FileOutputStream(file);
@@ -173,8 +205,8 @@ public class HttpServer extends NanoHTTPD {
     private Response readImage(Map<String, String> params) {
         String relativePath = params.get("path");
 
-        File file = new File(projectDirectory + "/" + relativePath);
-        if (!file.exists() || !file.isFile()) {
+        File file = resolveAndValidatePath(projectDirectory, relativePath);
+        if (file == null || !file.exists() || !file.isFile()) {
             return notFound();
         }
 
@@ -190,8 +222,8 @@ public class HttpServer extends NanoHTTPD {
     private Response readFile(Map<String, String> params) {
         String relativePath = params.get("path");
 
-        File file = new File(projectDirectory + "/" + relativePath);
-        if (!file.exists() || !file.isFile()) {
+        File file = resolveAndValidatePath(projectDirectory, relativePath);
+        if (file == null || !file.exists() || !file.isFile()) {
             return notFound();
         }
 
@@ -236,7 +268,7 @@ public class HttpServer extends NanoHTTPD {
                 "</style>\n" +
                 "</head>\n" +
                 "<body>\n" +
-                "<div id=\"tip\"><center>Cannot open " + relativePath +
+                "<div id=\"tip\"><center>Cannot open " + escapeHtml(relativePath) +
                 "</center></div>\n" +
                 "</body>\n" +
                 "</html>";
@@ -356,8 +388,8 @@ public class HttpServer extends NanoHTTPD {
             subPath += "/";
         }
 
-        File dir = new File(projectDirectory + "/" + subPath);
-        if (!dir.exists() || !dir.isDirectory()) {
+        File dir = resolveAndValidatePath(projectDirectory, subPath);
+        if (dir == null || !dir.exists() || !dir.isDirectory()) {
             return notFound();
         }
 
@@ -380,10 +412,12 @@ public class HttpServer extends NanoHTTPD {
     }
 
     private void appendFileNode(StringBuilder sb, File f, String subPath) {
+        String safeName = f.getName().replace("\\", "\\\\").replace("\"", "\\\"");
+        String safeId = (subPath + f.getName()).replace("\\", "\\\\").replace("\"", "\\\"");
         sb.append("{");
-        sb.append("\"name\": \"" + f.getName() + "\",");
+        sb.append("\"name\": \"" + safeName + "\",");
         // Use the relative path as the id
-        sb.append("\"id\": \"" + subPath + f.getName() + "\",");
+        sb.append("\"id\": \"" + safeId + "\",");
         if (f.isDirectory()) {
             sb.append("\"load_on_demand\": true");
         } else {
@@ -393,6 +427,10 @@ public class HttpServer extends NanoHTTPD {
     }
 
     private String getFilePath(String uri) {
+        // Prevent path traversal in static resource URIs
+        if (uri.contains("..")) {
+            return null;
+        }
         if ("/".equals(uri)) {
             return httpDirectory + "/index.htm";
         }

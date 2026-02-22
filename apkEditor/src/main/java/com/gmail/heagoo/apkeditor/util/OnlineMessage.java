@@ -56,7 +56,7 @@ public class OnlineMessage {
     }
 
     private void getOnlineMessage() {
-        String urlStr = "http://www.apkeditorfree.com/updates/message.htm";
+        String urlStr = "https://www.apkeditorfree.com/updates/message.htm";
         try {
             URL url = new URL(urlStr);
             HttpURLConnection conn = (HttpURLConnection) url.openConnection();
