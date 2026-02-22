@@ -119,6 +119,8 @@ public class RootCommand implements CommandInterface {
         Process process = null;
         DataOutputStream os = null;
         try {
+            validateCommand(command);
+
             debug(String.format("Running '%s' as root", command));
 
             process = runWithEnv(getSuPath(), env);

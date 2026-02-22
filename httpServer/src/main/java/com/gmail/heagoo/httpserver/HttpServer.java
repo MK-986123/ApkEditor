@@ -428,13 +428,23 @@ public class HttpServer extends NanoHTTPD {
 
     private String getFilePath(String uri) {
         // Prevent path traversal in static resource URIs
-        if (uri.contains("..")) {
+        if (uri == null || uri.contains("..") || uri.contains("%2e") || uri.contains("%2E")) {
             return null;
         }
         if ("/".equals(uri)) {
             return httpDirectory + "/index.htm";
         }
-        return httpDirectory + uri;
+        try {
+            File base = new File(httpDirectory).getCanonicalFile();
+            File resolved = new File(httpDirectory + uri).getCanonicalFile();
+            if (!resolved.getPath().startsWith(base.getPath() + File.separator) &&
+                    !resolved.getPath().equals(base.getPath())) {
+                return null;
+            }
+            return resolved.getPath();
+        } catch (IOException e) {
+            return null;
+        }
     }
 
     private String getMimeType(String filePath) {
