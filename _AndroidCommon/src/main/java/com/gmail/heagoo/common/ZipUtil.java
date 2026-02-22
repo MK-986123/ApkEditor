@@ -38,12 +38,7 @@ public class ZipUtil {
                 }
 
                 if (ze.isDirectory()) {
-                    String absPath = zipDir;
-                    if (!zipDir.endsWith("/")) {
-                        absPath += "/";
-                        absPath += entryName;
-                    }
-                    File f = new File(absPath);
+                    File f = getFile(zipDir, entryName);
                     f.mkdirs();
                     // Log.d("DEBUG", "dir=" + zipDir + ze.getName() + ", ret="
                     // + ret);
@@ -103,7 +98,7 @@ public class ZipUtil {
                 String relativePath = ze.getName()
                         .substring(entryPath.length());
                 if (ze.isDirectory()) {
-                    File f = new File(dstPath + "/" + relativePath);
+                    File f = getFile(dstPath, relativePath);
                     f.mkdirs();
                     continue;
                 }
@@ -148,12 +143,7 @@ public class ZipUtil {
                 }
 
                 if (ze.isDirectory()) {
-                    String absPath = zipDir;
-                    if (!zipDir.endsWith("/")) {
-                        absPath += "/";
-                        absPath += entryName;
-                    }
-                    File f = new File(absPath);
+                    File f = getFile(zipDir, entryName);
                     f.mkdirs();
                     // Log.d("DEBUG", "dir=" + zipDir + ze.getName() + ", ret="
                     // + ret);
@@ -293,6 +283,12 @@ public class ZipUtil {
     }
 
     private static File getFile(String baseDir, String relativePath) throws IOException {
+        if (relativePath.startsWith("/")) {
+            throw new IOException("Zip entry must be relative path: " + relativePath);
+        }
+        if (relativePath.indexOf('\\') >= 0) {
+            throw new IOException("Zip entry contains invalid path separator: " + relativePath);
+        }
         // Sanitize: reject entries with path traversal sequences
         if (relativePath.contains("..")) {
             throw new IOException("Zip entry contains path traversal: " + relativePath);
