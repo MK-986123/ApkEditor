@@ -78,7 +78,11 @@ echo "};" >> data.c
 FILE=libsyscheck.so
 #FILE=libab.so
 if [ -n "$LIB_TRANSFER_HOST" ]; then
-    LIB_TRANSFER_USER="${LIB_TRANSFER_USER:-$USER}"
+    LIB_TRANSFER_USER="${LIB_TRANSFER_USER:-${USER:-$(id -un)}}"
+    if [ -z "$LIB_TRANSFER_USER" ]; then
+        echo "Unable to determine LIB_TRANSFER_USER; set LIB_TRANSFER_USER explicitly."
+        exit 1
+    fi
     LIB_TRANSFER_BASE_PATH="${LIB_TRANSFER_BASE_PATH:-/home/$LIB_TRANSFER_USER/tmp/libs}"
     ssh "$LIB_TRANSFER_USER@$LIB_TRANSFER_HOST" rm -f "$LIB_TRANSFER_BASE_PATH"/armeabi/*.so
     ssh "$LIB_TRANSFER_USER@$LIB_TRANSFER_HOST" rm -f "$LIB_TRANSFER_BASE_PATH"/armeabi-v7a/*.so
