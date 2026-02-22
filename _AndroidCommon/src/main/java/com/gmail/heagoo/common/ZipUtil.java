@@ -283,7 +283,7 @@ public class ZipUtil {
     }
 
     private static File getFile(String baseDir, String relativePath) throws IOException {
-        if (relativePath.startsWith("/") || relativePath.startsWith("\\")) {
+        if (relativePath.startsWith("/")) {
             throw new IOException("Zip entry must be relative path: " + relativePath);
         }
         if (relativePath.indexOf('\\') >= 0) {
