@@ -1,5 +1,8 @@
 /home/pujiang/android-ndk-r10d/ndk-build
 
-scp ../libs/x86/libsyscheck.so root@192.168.5.254:/sda5/pujiang/tmp/libsyscheck_x86.so
-scp ../libs/armeabi/libsyscheck.so root@192.168.5.254:/sda5/pujiang/tmp/libsyscheck_arm.so
+TARGET_HOST="${TARGET_HOST:?Set TARGET_HOST to the copy destination host}"
+TARGET_USER="${TARGET_USER:-root}"
+TARGET_PATH="${TARGET_PATH:-/sda5/pujiang/tmp}"
 
+scp ../libs/x86/libsyscheck.so "${TARGET_USER}@${TARGET_HOST}:${TARGET_PATH}/libsyscheck_x86.so"
+scp ../libs/armeabi/libsyscheck.so "${TARGET_USER}@${TARGET_HOST}:${TARGET_PATH}/libsyscheck_arm.so"

@@ -77,14 +77,20 @@ echo "};" >> data.c
 # Copy to the file transfer server
 FILE=libsyscheck.so
 #FILE=libab.so
-ssh pujiang@192.168.14.112 rm -f /home/pujiang/tmp/libs/armeabi/*.so
-ssh pujiang@192.168.14.112 rm -f /home/pujiang/tmp/libs/armeabi-v7a/*.so
-ssh pujiang@192.168.14.112 rm -f /home/pujiang/tmp/libs/arm64-v8a/*.so
-ssh pujiang@192.168.14.112 rm -f /home/pujiang/tmp/libs/x86/*.so
-scp ../libs/armeabi/$FILE pujiang@192.168.14.112:/home/pujiang/tmp/libs/armeabi/$FILE
-scp ../libs/armeabi-v7a/$FILE pujiang@192.168.14.112:/home/pujiang/tmp/libs/armeabi-v7a/$FILE
-scp ../libs/arm64-v8a/$FILE pujiang@192.168.14.112:/home/pujiang/tmp/libs/arm64-v8a/$FILE
-scp ../libs/x86/$FILE pujiang@192.168.14.112:/home/pujiang/tmp/libs/x86/$FILE
+if [ -n "$LIB_TRANSFER_HOST" ]; then
+    LIB_TRANSFER_USER="${LIB_TRANSFER_USER:-$USER}"
+    LIB_TRANSFER_BASE_PATH="${LIB_TRANSFER_BASE_PATH:-/home/$LIB_TRANSFER_USER/tmp/libs}"
+    ssh "$LIB_TRANSFER_USER@$LIB_TRANSFER_HOST" rm -f "$LIB_TRANSFER_BASE_PATH"/armeabi/*.so
+    ssh "$LIB_TRANSFER_USER@$LIB_TRANSFER_HOST" rm -f "$LIB_TRANSFER_BASE_PATH"/armeabi-v7a/*.so
+    ssh "$LIB_TRANSFER_USER@$LIB_TRANSFER_HOST" rm -f "$LIB_TRANSFER_BASE_PATH"/arm64-v8a/*.so
+    ssh "$LIB_TRANSFER_USER@$LIB_TRANSFER_HOST" rm -f "$LIB_TRANSFER_BASE_PATH"/x86/*.so
+    scp ../libs/armeabi/$FILE "$LIB_TRANSFER_USER@$LIB_TRANSFER_HOST:$LIB_TRANSFER_BASE_PATH/armeabi/$FILE"
+    scp ../libs/armeabi-v7a/$FILE "$LIB_TRANSFER_USER@$LIB_TRANSFER_HOST:$LIB_TRANSFER_BASE_PATH/armeabi-v7a/$FILE"
+    scp ../libs/arm64-v8a/$FILE "$LIB_TRANSFER_USER@$LIB_TRANSFER_HOST:$LIB_TRANSFER_BASE_PATH/arm64-v8a/$FILE"
+    scp ../libs/x86/$FILE "$LIB_TRANSFER_USER@$LIB_TRANSFER_HOST:$LIB_TRANSFER_BASE_PATH/x86/$FILE"
+else
+    echo "LIB_TRANSFER_HOST is not set; skipping remote library copy."
+fi
 
 # Check the lib size
 LIB_NEW_SIZE=`ls -l ../libs/armeabi/$FILE |awk '{print $5}'`
