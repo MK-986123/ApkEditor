@@ -78,20 +78,28 @@ echo "};" >> data.c
 FILE=libsyscheck.so
 #FILE=libab.so
 if [ -n "$LIB_TRANSFER_HOST" ]; then
-    LIB_TRANSFER_USER="${LIB_TRANSFER_USER:-${USER:-$(id -un)}}"
-    if [ -z "$LIB_TRANSFER_USER" ]; then
-        echo "Unable to determine LIB_TRANSFER_USER; set LIB_TRANSFER_USER explicitly."
-        exit 1
-    fi
-    LIB_TRANSFER_BASE_PATH="${LIB_TRANSFER_BASE_PATH:-/home/$LIB_TRANSFER_USER/tmp/libs}"
+    LIB_TRANSFER_USER="${LIB_TRANSFER_USER:?LIB_TRANSFER_USER must be set when LIB_TRANSFER_HOST is configured}"
+    LIB_TRANSFER_BASE_PATH="${LIB_TRANSFER_BASE_PATH:?LIB_TRANSFER_BASE_PATH must be set when LIB_TRANSFER_HOST is configured}"
+    case "$LIB_TRANSFER_HOST" in
+      (*[!A-Za-z0-9.-]*) echo "LIB_TRANSFER_HOST contains unsupported characters"; exit 1 ;;
+    esac
+    case "$LIB_TRANSFER_USER" in
+      (*[!A-Za-z0-9_.-]*) echo "LIB_TRANSFER_USER contains unsupported characters"; exit 1 ;;
+    esac
+    case "$LIB_TRANSFER_BASE_PATH" in
+      (*[!A-Za-z0-9_./-]*) echo "LIB_TRANSFER_BASE_PATH contains unsupported characters; only alphanumeric, dots, underscores, slashes, and hyphens are allowed"; exit 1 ;;
+    esac
+    case "$FILE" in
+      (*[!A-Za-z0-9_.-]*) echo "FILE contains unsupported characters"; exit 1 ;;
+    esac
     ssh "$LIB_TRANSFER_USER@$LIB_TRANSFER_HOST" rm -f "$LIB_TRANSFER_BASE_PATH"/armeabi/*.so
     ssh "$LIB_TRANSFER_USER@$LIB_TRANSFER_HOST" rm -f "$LIB_TRANSFER_BASE_PATH"/armeabi-v7a/*.so
     ssh "$LIB_TRANSFER_USER@$LIB_TRANSFER_HOST" rm -f "$LIB_TRANSFER_BASE_PATH"/arm64-v8a/*.so
     ssh "$LIB_TRANSFER_USER@$LIB_TRANSFER_HOST" rm -f "$LIB_TRANSFER_BASE_PATH"/x86/*.so
-    scp ../libs/armeabi/$FILE "$LIB_TRANSFER_USER@$LIB_TRANSFER_HOST:$LIB_TRANSFER_BASE_PATH/armeabi/$FILE"
-    scp ../libs/armeabi-v7a/$FILE "$LIB_TRANSFER_USER@$LIB_TRANSFER_HOST:$LIB_TRANSFER_BASE_PATH/armeabi-v7a/$FILE"
-    scp ../libs/arm64-v8a/$FILE "$LIB_TRANSFER_USER@$LIB_TRANSFER_HOST:$LIB_TRANSFER_BASE_PATH/arm64-v8a/$FILE"
-    scp ../libs/x86/$FILE "$LIB_TRANSFER_USER@$LIB_TRANSFER_HOST:$LIB_TRANSFER_BASE_PATH/x86/$FILE"
+    scp "../libs/armeabi/$FILE" "$LIB_TRANSFER_USER@$LIB_TRANSFER_HOST:$LIB_TRANSFER_BASE_PATH/armeabi/$FILE"
+    scp "../libs/armeabi-v7a/$FILE" "$LIB_TRANSFER_USER@$LIB_TRANSFER_HOST:$LIB_TRANSFER_BASE_PATH/armeabi-v7a/$FILE"
+    scp "../libs/arm64-v8a/$FILE" "$LIB_TRANSFER_USER@$LIB_TRANSFER_HOST:$LIB_TRANSFER_BASE_PATH/arm64-v8a/$FILE"
+    scp "../libs/x86/$FILE" "$LIB_TRANSFER_USER@$LIB_TRANSFER_HOST:$LIB_TRANSFER_BASE_PATH/x86/$FILE"
 else
     echo "LIB_TRANSFER_HOST is not set; skipping remote library copy."
 fi
