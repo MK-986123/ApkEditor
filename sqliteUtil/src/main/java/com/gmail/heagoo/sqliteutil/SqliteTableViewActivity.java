@@ -303,12 +303,25 @@ public class SqliteTableViewActivity extends CustomizedLangActivity implements
     }
 
     /**
+     * Sanitizes a table name to prevent SQL injection.
+     * Only allows alphanumeric characters, underscores, and dots.
+     * Wraps the name in double quotes for safe usage in SQL.
+     */
+    private static String sanitizeTableName(String name) {
+        if (name == null || !name.matches("[A-Za-z0-9_.]+")) {
+            throw new IllegalArgumentException("Invalid table name: " + name);
+        }
+        return "\"" + name.replace("\"", "\"\"") + "\"";
+    }
+
+    /**
      * query all records, return cursor
      *
      * @return Cursor
      */
     private Cursor queryTheCursor(SQLiteDatabase db, int offset, int limit) {
-        Cursor c = db.rawQuery("SELECT * FROM " + tableName + " limit " + limit
+        String safeTable = sanitizeTableName(tableName);
+        Cursor c = db.rawQuery("SELECT * FROM " + safeTable + " limit " + limit
                 + " offset " + offset, null);
         return c;
     }
@@ -327,7 +340,7 @@ public class SqliteTableViewActivity extends CustomizedLangActivity implements
             this.columnIsPKs = new ArrayList<String>();
 
             Cursor c = db
-                    .rawQuery("PRAGMA table_info(" + tableName + ")", null);
+                    .rawQuery("PRAGMA table_info(" + sanitizeTableName(tableName) + ")", null);
             if (c.moveToFirst()) {
                 int pkIdx = c.getColumnIndex("pk");
                 do {
@@ -348,7 +361,7 @@ public class SqliteTableViewActivity extends CustomizedLangActivity implements
     }
 
     private void getTableSize(SQLiteDatabase db) {
-        Cursor c = db.rawQuery("SELECT COUNT(*) FROM " + tableName, null);
+        Cursor c = db.rawQuery("SELECT COUNT(*) FROM " + sanitizeTableName(tableName), null);
         if (c.moveToFirst()) {
             this.tableSize = c.getInt(0);
         }

@@ -30,11 +30,18 @@ public class ZipUtil {
             byte[] buf = new byte[4096];
             while (zList.hasMoreElements()) {
                 ze = (ZipEntry) zList.nextElement();
+
+                // Validate entry name to prevent Zip Slip
+                String entryName = ze.getName();
+                if (entryName.contains("..")) {
+                    throw new IOException("Zip entry contains path traversal: " + entryName);
+                }
+
                 if (ze.isDirectory()) {
                     String absPath = zipDir;
                     if (!zipDir.endsWith("/")) {
                         absPath += "/";
-                        absPath += ze.getName();
+                        absPath += entryName;
                     }
                     File f = new File(absPath);
                     f.mkdirs();
@@ -133,11 +140,18 @@ public class ZipUtil {
             byte[] buf = new byte[4096];
             while (zList.hasMoreElements()) {
                 ze = (ZipEntry) zList.nextElement();
+
+                // Validate entry name to prevent Zip Slip
+                String entryName = ze.getName();
+                if (entryName.contains("..")) {
+                    continue; // Skip malicious entries silently
+                }
+
                 if (ze.isDirectory()) {
                     String absPath = zipDir;
                     if (!zipDir.endsWith("/")) {
                         absPath += "/";
-                        absPath += ze.getName();
+                        absPath += entryName;
                     }
                     File f = new File(absPath);
                     f.mkdirs();
@@ -278,7 +292,12 @@ public class ZipUtil {
         }
     }
 
-    private static File getFile(String baseDir, String relativePath) {
+    private static File getFile(String baseDir, String relativePath) throws IOException {
+        // Sanitize: reject entries with path traversal sequences
+        if (relativePath.contains("..")) {
+            throw new IOException("Zip entry contains path traversal: " + relativePath);
+        }
+
         String[] dirs = relativePath.split("/");
         File ret = new File(baseDir);
         if (!ret.exists()) {
@@ -294,6 +313,15 @@ public class ZipUtil {
         }
 
         ret = new File(ret, dirs[dirs.length - 1]);
+
+        // Validate that the resolved path is within the base directory
+        String canonicalBase = new File(baseDir).getCanonicalPath();
+        String canonicalTarget = ret.getCanonicalPath();
+        if (!canonicalTarget.startsWith(canonicalBase + File.separator) &&
+                !canonicalTarget.equals(canonicalBase)) {
+            throw new IOException("Zip entry resolves outside target directory: " + relativePath);
+        }
+
         return ret;
     }
 

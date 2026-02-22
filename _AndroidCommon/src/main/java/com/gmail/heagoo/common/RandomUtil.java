@@ -1,17 +1,21 @@
 package com.gmail.heagoo.common;
 
-import java.util.Random;
+import java.security.SecureRandom;
 
 public class RandomUtil {
 
     private static final char[] letters = new char[]{'a', 'b', 'c', 'd', 'e',
             'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r',
             's', 't', 'u', 'v', 'w', 'x', 'y', 'z'};
-    private static Random r;
+    private static volatile SecureRandom r;
 
     public static String getRandomString(int bits) {
         if (r == null) {
-            r = new Random(System.currentTimeMillis());
+            synchronized (RandomUtil.class) {
+                if (r == null) {
+                    r = new SecureRandom();
+                }
+            }
         }
 
         StringBuilder sb = new StringBuilder();
